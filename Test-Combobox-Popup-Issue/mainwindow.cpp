@@ -5,6 +5,7 @@
 #include <QLabel>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <QScrollArea>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -14,7 +15,26 @@ MainWindow::MainWindow(QWidget *parent)
     centralWidget->setFixedWidth(165);
 
     auto * mainLayout = new QVBoxLayout(this);
+    mainLayout->setSpacing(0);
     centralWidget->setLayout(mainLayout);
+
+    auto * m_scroll = new QScrollArea(this);
+    m_scroll->setWidgetResizable(true);
+    m_scroll->setFrameStyle(QFrame::NoFrame);
+    mainLayout->addWidget(m_scroll);
+    centralWidget->setContentsMargins(0, 0, 0, 0);
+
+
+    auto* layout = new QVBoxLayout();
+    layout->setSpacing(0);
+    layout->setContentsMargins(0, 0, 0, 0);
+
+    auto* hlayout = new QHBoxLayout();
+    hlayout->setSpacing(0);
+    hlayout->setContentsMargins(0, 0, 0, 0);
+    mainLayout->addLayout(hlayout);
+    hlayout->addLayout(layout);
+
 
     auto * frame = new QFrame(this);
     auto * vbox = new QVBoxLayout();
@@ -29,7 +49,7 @@ MainWindow::MainWindow(QWidget *parent)
     vbox->addWidget(label);
     vbox->addWidget(combo);
 
-    mainLayout->addWidget(frame);
+    layout->addWidget(frame);
 
 }
 
