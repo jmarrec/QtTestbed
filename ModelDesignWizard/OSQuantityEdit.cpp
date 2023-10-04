@@ -1,4 +1,5 @@
 #include "OSQuantityEdit.hpp"
+#include "Assert.hpp"
 
 #include <QDebug>
 
@@ -9,11 +10,6 @@
 #include <bitset>
 #include <iomanip>
 #include <sstream>
-
-#define OS_ASSERT(expr) BOOST_ASSERT(expr)
-#define BOOST_DISABLE_ASSERTS
-#include <boost/assert.hpp>
-#include <boost/regex.hpp>
 
 namespace openstudio {
 
