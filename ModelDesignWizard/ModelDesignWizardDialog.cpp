@@ -30,6 +30,8 @@
 #include "ModelDesignWizardDialog.hpp"
 #include "Buttons.hpp"
 
+#include <QApplication>
+
 #include <QBoxLayout>
 #include <QComboBox>
 #include <QGridLayout>
@@ -545,6 +547,7 @@ void ModelDesignWizardDialog::displayResults() {
 /***** SLOTS *****/
 
 void ModelDesignWizardDialog::on_cancelButton(bool checked) {
+  qApp->exit();
   if (m_mainPaneStackedWidget->currentIndex() == m_templateSelectionPageIdx) {
     // Nothing specific here
   } else if (m_mainPaneStackedWidget->currentIndex() == m_spaceTypeRatiosPageIdx) {
