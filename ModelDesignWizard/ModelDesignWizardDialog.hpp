@@ -39,6 +39,7 @@ class QLabel;
 class QCloseEvent;
 class QComboBox;
 class QDoubleValidator;
+class QLineEdit;
 class QProcess;
 class QPushButton;
 class QResizeEvent;
@@ -123,9 +124,6 @@ class ModelDesignWizardDialog : public OSDialog
 
   QStackedWidget* m_rightPaneStackedWidget;
 
-  QWidget* m_spaceTypeRatiosPageWidget;
-  QWidget* m_spaceTypeRatiosMainLayout;
-
   QTextEdit* m_argumentsFailedTextEdit;
 
   QTimer* m_timer;
@@ -158,6 +156,11 @@ class ModelDesignWizardDialog : public OSDialog
 
   QDoubleValidator* m_ratioValidator;
   QDoubleValidator* m_positiveDoubleValidator;
+
+  QWidget* m_spaceTypeRatiosPageWidget;
+  QWidget* m_spaceTypeRatiosMainLayout;
+  QLineEdit* m_totalBuildingFloorAreaEdit;
+  QLineEdit* m_totalBuildingRatioEdit;
 };
 
 }  // namespace openstudio

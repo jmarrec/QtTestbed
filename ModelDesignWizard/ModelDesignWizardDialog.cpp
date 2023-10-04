@@ -329,10 +329,20 @@ void ModelDesignWizardDialog::populateSpaceTypeRatiosPage() {
       m_spaceTypeRatiosMainLayout->addWidget(totalBuildingFloorAreaLabel, row, col++, 1, 1);
     }
     {
-      auto* totalBuildingFloorAreaEdit = new QLineEdit();
-      totalBuildingFloorAreaEdit->setValidator(m_positiveDoubleValidator);
-      m_spaceTypeRatiosMainLayout->addWidget(totalBuildingFloorAreaEdit, row, col++, 1, 1);
-      totalBuildingFloorAreaEdit->setText(QString::number(10000.0));
+      m_totalBuildingFloorAreaEdit = new QLineEdit();
+      m_totalBuildingFloorAreaEdit->setValidator(m_positiveDoubleValidator);
+      m_spaceTypeRatiosMainLayout->addWidget(m_totalBuildingFloorAreaEdit, row, col++, 1, 1);
+      m_totalBuildingFloorAreaEdit->setText(QString::number(10000.0));
+    }
+    {
+      auto* totalBuildingRatioLabel = new QLabel("Total Ratio:");
+      totalBuildingRatioLabel->setObjectName("H2");
+      m_spaceTypeRatiosMainLayout->addWidget(totalBuildingRatioLabel, row, col++, 1, 1);
+    }
+    {
+      m_totalBuildingRatioEdit = new QLineEdit();
+      m_totalBuildingRatioEdit->setEnabled(false);
+      m_spaceTypeRatiosMainLayout->addWidget(m_totalBuildingRatioEdit, row, col++, 1, 1);
     }
   }
 
