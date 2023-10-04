@@ -1,0 +1,19 @@
+QPushButton#DeleteButton {
+  border: none;
+  background: transparent;
+  background-image: url(":/images/delete_off.png");
+  padding-left: none;
+  padding-right: none;
+}
+
+QPushButton#DeleteButton:disabled {
+  background-image: url(":/images/delete_disabled.png");
+}
+
+QPushButton#DeleteButton:hover {
+  background-image: url(":/images/delete_over.png");
+}
+
+QPushButton#DeleteButton:pressed {
+  background-image: url(":/images/delete_press.png");
+}

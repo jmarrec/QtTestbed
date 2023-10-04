@@ -1,0 +1,14 @@
+<!DOCTYPE RCC><RCC version="1.0">
+  <qresource>
+    <file>app.qss</file>
+    <file>library/ModelDesignWizard.json</file>
+    <file>images/delete_off.png</file>
+    <file>images/delete_disabled.png</file>
+    <file>images/delete_over.png</file>
+    <file>images/delete_press.png</file>
+    <file>images/delete_off@2x.png</file>
+    <file>images/delete_disabled@2x.png</file>
+    <file>images/delete_over@2x.png</file>
+    <file>images/delete_press@2x.png</file>
+  </qresource>
+</RCC>
