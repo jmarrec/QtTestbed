@@ -127,7 +127,7 @@ ModelDesignWizardDialog::ModelDesignWizardDialog(QWidget* parent)
   setWindowTitle("Apply Measure Now");
   setWindowModality(Qt::ApplicationModal);
   setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-  setSizeGripEnabled(true);  
+  setSizeGripEnabled(true);
 
   // Load support JSON (has to be before createWidgets
   QFile file(":/library/ModelDesignWizard.json");
@@ -152,8 +152,7 @@ ModelDesignWizardDialog::ModelDesignWizardDialog(QWidget* parent)
   createWidgets();
 }
 
-ModelDesignWizardDialog::~ModelDesignWizardDialog() {
-}
+ModelDesignWizardDialog::~ModelDesignWizardDialog() {}
 
 QSize ModelDesignWizardDialog::sizeHint() const {
   return QSize(770, 560);
@@ -307,30 +306,30 @@ void ModelDesignWizardDialog::populateSpaceTypeComboBox(QComboBox* comboBox, con
 
 void ModelDesignWizardDialog::populateSpaceTypeRatiosPage() {
 
-  auto* mainGridLayout = new QGridLayout();
-  mainGridLayout->setContentsMargins(7, 7, 7, 7);
-  mainGridLayout->setSpacing(14);
+  auto* m_spaceTypeRatiosMainLayout = new QGridLayout();
+  m_spaceTypeRatiosMainLayout->setContentsMargins(7, 7, 7, 7);
+  m_spaceTypeRatiosMainLayout->setSpacing(14);
 
-  if (auto * existingLayout = m_spaceTypeRatiosPageWidget->layout()) {
+  if (auto* existingLayout = m_spaceTypeRatiosPageWidget->layout()) {
     // Reparent the layout to a temporary widget, so we can install the new one, and this one will get deleted because we don't have a reference to it anymore
     QWidget().setLayout(existingLayout);
   }
 
-  m_spaceTypeRatiosPageWidget->setLayout(mainGridLayout);
+  m_spaceTypeRatiosPageWidget->setLayout(m_spaceTypeRatiosMainLayout);
 
-  int row = mainGridLayout->rowCount();
+  int row = m_spaceTypeRatiosMainLayout->rowCount();
   {
     int col = 0;
 
     {
       auto* totalBuildingFloorAreaLabel = new QLabel("Total Building Floor Area:");
       totalBuildingFloorAreaLabel->setObjectName("H2");
-      mainGridLayout->addWidget(totalBuildingFloorAreaLabel, row, col++, 1, 1);
+      m_spaceTypeRatiosMainLayout->addWidget(totalBuildingFloorAreaLabel, row, col++, 1, 1);
     }
     {
       auto* totalBuildingFloorAreaEdit = new QLineEdit();
       totalBuildingFloorAreaEdit->setValidator(m_positiveDoubleValidator);
-      mainGridLayout->addWidget(totalBuildingFloorAreaEdit, row, col++, 1, 1);
+      m_spaceTypeRatiosMainLayout->addWidget(totalBuildingFloorAreaEdit, row, col++, 1, 1);
       totalBuildingFloorAreaEdit->setText(QString::number(10000.0));
     }
   }
@@ -341,17 +340,17 @@ void ModelDesignWizardDialog::populateSpaceTypeRatiosPage() {
     {
       auto* buildingTypelabel = new QLabel("Building Type:");
       buildingTypelabel->setObjectName("H2");
-      mainGridLayout->addWidget(buildingTypelabel, row, col++, 1, 1);
+      m_spaceTypeRatiosMainLayout->addWidget(buildingTypelabel, row, col++, 1, 1);
     }
     {
       auto* spaceTypelabel = new QLabel("Space Type:");
       spaceTypelabel->setObjectName("H2");
-      mainGridLayout->addWidget(spaceTypelabel, row, col++, 1, 1);
+      m_spaceTypeRatiosMainLayout->addWidget(spaceTypelabel, row, col++, 1, 1);
     }
     {
       auto* ratioLabel = new QLabel("Ratio:");
       ratioLabel->setObjectName("H2");
-      mainGridLayout->addWidget(ratioLabel, row, col++, 1, 1);
+      m_spaceTypeRatiosMainLayout->addWidget(ratioLabel, row, col++, 1, 1);
     }
   }
 
@@ -370,21 +369,21 @@ void ModelDesignWizardDialog::populateSpaceTypeRatiosPage() {
       int col = 0;
 
       auto* buildingTypeComboBox = new QComboBox();
-      mainGridLayout->addWidget(buildingTypeComboBox, row, col++, 1, 1);
+      m_spaceTypeRatiosMainLayout->addWidget(buildingTypeComboBox, row, col++, 1, 1);
       populateBuildingTypeComboBox(buildingTypeComboBox);
       buildingTypeComboBox->setCurrentText(selectedPrimaryBuildingType);
 
       auto* spaceTypeComboBox = new QComboBox();
-      mainGridLayout->addWidget(spaceTypeComboBox, row, col++, 1, 1);
+      m_spaceTypeRatiosMainLayout->addWidget(spaceTypeComboBox, row, col++, 1, 1);
       populateSpaceTypeComboBox(spaceTypeComboBox, selectedPrimaryBuildingType);
       spaceTypeComboBox->setCurrentText(it.key());
 
       auto* spaceTypeRatioEdit = new QLineEdit();
       spaceTypeRatioEdit->setValidator(m_ratioValidator);
-      mainGridLayout->addWidget(spaceTypeRatioEdit, row, col++, 1, 1);
+      m_spaceTypeRatiosMainLayout->addWidget(spaceTypeRatioEdit, row, col++, 1, 1);
 
       auto* deleteRowButton = new openstudio::RemoveButton();
-      mainGridLayout->addWidget(deleteRowButton, row, col++, 1, 1);
+      m_spaceTypeRatiosMainLayout->addWidget(deleteRowButton, row, col++, 1, 1);
 
       spaceTypeRatioEdit->setText(QString::number(it.value().toObject()["ratio"].toDouble()));
 
@@ -393,7 +392,7 @@ void ModelDesignWizardDialog::populateSpaceTypeRatiosPage() {
     }
   }
 
-  mainGridLayout->setRowStretch(mainGridLayout->rowCount(), 100);
+  m_spaceTypeRatiosMainLayout->setRowStretch(m_spaceTypeRatiosMainLayout->rowCount(), 100);
 
   // TODO: add a way to add / delete rows, so one could pick from another building type for eg
 }
@@ -505,7 +504,6 @@ void ModelDesignWizardDialog::runMeasure() {
   m_timer->start(50);
   this->okButton()->hide();
   this->backButton()->hide();
-
 }
 
 void ModelDesignWizardDialog::displayResults() {
@@ -521,7 +519,6 @@ void ModelDesignWizardDialog::displayResults() {
   this->backButton()->show();
   this->backButton()->setEnabled(true);
   this->cancelButton()->setEnabled(true);
-
 
   m_advancedOutput.clear();
 

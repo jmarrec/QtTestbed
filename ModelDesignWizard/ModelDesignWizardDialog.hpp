@@ -108,7 +108,6 @@ class ModelDesignWizardDialog : public OSDialog
   void toolsUpdated();
 
  private:
-
   void createWidgets();
   QWidget* createTemplateSelectionPage();
   QWidget* createSpaceTypeRatiosPage();
@@ -125,6 +124,7 @@ class ModelDesignWizardDialog : public OSDialog
   QStackedWidget* m_rightPaneStackedWidget;
 
   QWidget* m_spaceTypeRatiosPageWidget;
+  QWidget* m_spaceTypeRatiosMainLayout;
 
   QTextEdit* m_argumentsFailedTextEdit;
 
@@ -158,7 +158,6 @@ class ModelDesignWizardDialog : public OSDialog
 
   QDoubleValidator* m_ratioValidator;
   QDoubleValidator* m_positiveDoubleValidator;
-
 };
 
 }  // namespace openstudio
