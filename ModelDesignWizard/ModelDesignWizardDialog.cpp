@@ -29,10 +29,12 @@
 
 #include "ModelDesignWizardDialog.hpp"
 #include "Buttons.hpp"
+#include "OSQuantityEdit.hpp"
 
 #include <QApplication>
 
 #include <QBoxLayout>
+#include <QCheckBox>
 #include <QComboBox>
 #include <QGridLayout>
 #include <QCloseEvent>
@@ -60,6 +62,7 @@
 
 #include <array>
 #include <fstream>
+#include <qnamespace.h>
 #include <string_view>
 
 #define FAILED_ARG_TEXT "<FONT COLOR = RED>Failed to Show Arguments<FONT COLOR = BLACK> <br> <br>Reason(s): <br> <br>"
@@ -219,6 +222,12 @@ QWidget* ModelDesignWizardDialog::createTemplateSelectionPage() {
     }
   }
 
+  ++row;
+  m_useIPCheckBox = new QCheckBox("Use IP Units");
+  mainGridLayout->addWidget(m_useIPCheckBox, row, 0, 1, 1);
+  m_useIPCheckBox->setChecked(m_isIP);
+  connect(m_useIPCheckBox, &QCheckBox::stateChanged, this, [this](int state) { m_isIP = state == Qt::Checked; });
+
   m_standardTypeComboBox->setCurrentText("DOE");
   mainGridLayout->setRowStretch(mainGridLayout->rowCount(), 100);
 
@@ -329,10 +338,12 @@ void ModelDesignWizardDialog::populateSpaceTypeRatiosPage() {
       m_spaceTypeRatiosMainLayout->addWidget(totalBuildingFloorAreaLabel, row, col++, 1, 1);
     }
     {
-      m_totalBuildingFloorAreaEdit = new QLineEdit();
-      m_totalBuildingFloorAreaEdit->setValidator(m_positiveDoubleValidator);
+      m_totalBuildingFloorAreaEdit = new openstudio::OSNonModelObjectQuantityEdit("ft^2", "m^2", "ft^2", m_isIP);
+      m_totalBuildingFloorAreaEdit->setMinimumValue(0.0);
+      m_totalBuildingFloorAreaEdit->enableClickFocus();
       m_spaceTypeRatiosMainLayout->addWidget(m_totalBuildingFloorAreaEdit, row, col++, 1, 1);
-      m_totalBuildingFloorAreaEdit->setText(QString::number(10000.0));
+      connect(m_useIPCheckBox, &QCheckBox::stateChanged, m_totalBuildingFloorAreaEdit, &OSNonModelObjectQuantityEdit::onUnitSystemChange);
+      m_totalBuildingFloorAreaEdit->setDefault(10000.0);
     }
     {
       auto* totalBuildingRatioLabel = new QLabel("Total Ratio:");
@@ -364,6 +375,11 @@ void ModelDesignWizardDialog::populateSpaceTypeRatiosPage() {
       ratioLabel->setObjectName("H2");
       m_spaceTypeRatiosMainLayout->addWidget(ratioLabel, row, col++, 1, 1);
     }
+    {
+      auto* floorAreaLabel = new QLabel("Area:");
+      floorAreaLabel->setObjectName("H2");
+      m_spaceTypeRatiosMainLayout->addWidget(floorAreaLabel, row, col++, 1, 1);
+    }
   }
 
   const QString selectedStandardType = m_standardTypeComboBox->currentText();
@@ -380,6 +396,7 @@ void ModelDesignWizardDialog::populateSpaceTypeRatiosPage() {
     {
       int col = 0;
 
+#if 1
       auto* buildingTypeComboBox = new QComboBox();
       m_spaceTypeRatiosMainLayout->addWidget(buildingTypeComboBox, row, col++, 1, 1);
       populateBuildingTypeComboBox(buildingTypeComboBox);
@@ -390,17 +407,56 @@ void ModelDesignWizardDialog::populateSpaceTypeRatiosPage() {
       populateSpaceTypeComboBox(spaceTypeComboBox, selectedPrimaryBuildingType);
       spaceTypeComboBox->setCurrentText(it.key());
 
-      auto* spaceTypeRatioEdit = new QLineEdit();
-      spaceTypeRatioEdit->setValidator(m_ratioValidator);
+      auto* spaceTypeRatioEdit = new openstudio::OSNonModelObjectQuantityEdit("", "", "", false);
+      spaceTypeRatioEdit->setMinimumValue(0.0);
+      spaceTypeRatioEdit->setMaximumValue(1.0);
+      spaceTypeRatioEdit->enableClickFocus();
+      connect(m_useIPCheckBox, &QCheckBox::stateChanged, spaceTypeRatioEdit, &OSNonModelObjectQuantityEdit::onUnitSystemChange);
+
+      spaceTypeRatioEdit->setDefault(it.value().toObject()["ratio"].toDouble());
       m_spaceTypeRatiosMainLayout->addWidget(spaceTypeRatioEdit, row, col++, 1, 1);
+
+      auto* spaceTypeFloorAreaEdit = new openstudio::OSNonModelObjectQuantityEdit("ft^2", "m^2", "ft^2", m_isIP);
+      spaceTypeFloorAreaEdit->setMinimumValue(0.0);
+      spaceTypeFloorAreaEdit->enableClickFocus();
+      m_spaceTypeRatiosMainLayout->addWidget(spaceTypeFloorAreaEdit, row, col++, 1, 1);
+      connect(m_useIPCheckBox, &QCheckBox::stateChanged, spaceTypeFloorAreaEdit, &OSNonModelObjectQuantityEdit::onUnitSystemChange);
 
       auto* deleteRowButton = new openstudio::RemoveButton();
       m_spaceTypeRatiosMainLayout->addWidget(deleteRowButton, row, col++, 1, 1);
 
+      const bool isConnected = connect(buildingTypeComboBox, &QComboBox::currentTextChanged,
+                                       [this, &spaceTypeComboBox](const QString& text) { populateSpaceTypeComboBox(spaceTypeComboBox, text); });
+#else
+      // Put it in a widget so we can delete and hide
+      auto* rowWidget = new QWidget();
+      auto* hBoxLayout = new QHBoxLayout(rowWidget);
+
+      auto* buildingTypeComboBox = new QComboBox();
+      hBoxLayout->addWidget(buildingTypeComboBox);
+      populateBuildingTypeComboBox(buildingTypeComboBox);
+      buildingTypeComboBox->setCurrentText(selectedPrimaryBuildingType);
+
+      auto* spaceTypeComboBox = new QComboBox();
+      hBoxLayout->addWidget(spaceTypeComboBox);
+      populateSpaceTypeComboBox(spaceTypeComboBox, selectedPrimaryBuildingType);
+      spaceTypeComboBox->setCurrentText(it.key());
+
+      auto* spaceTypeRatioEdit = new QLineEdit();
+      spaceTypeRatioEdit->setValidator(m_ratioValidator);
+      hBoxLayout->addWidget(spaceTypeRatioEdit);
+
+      auto* deleteRowButton = new openstudio::RemoveButton();
+      hBoxLayout->addWidget(deleteRowButton);
+
       spaceTypeRatioEdit->setText(QString::number(it.value().toObject()["ratio"].toDouble()));
+
+      // Spans 1 row and 4 columns
+      m_spaceTypeRatiosMainLayout->addWidget(rowWidget, row, 0, 1, 4);
 
       const bool isConnected = connect(buildingTypeComboBox, &QComboBox::currentTextChanged,
                                        [this, &spaceTypeComboBox](const QString& text) { populateSpaceTypeComboBox(spaceTypeComboBox, text); });
+#endif
     }
   }
 
@@ -504,6 +560,11 @@ void ModelDesignWizardDialog::createWidgets() {
 #elif defined(Q_OS_WIN)
   setWindowFlags(Qt::WindowCloseButtonHint | Qt::MSWindowsFixedSizeDialogHint);
 #endif
+
+  // For quicker testing, TODO: REMOVE
+  m_targetStandardComboBox->setCurrentText("90.1-2019");
+  m_primaryBuildingTypeComboBox->setCurrentText("SecondarySchool");
+  // END TODO: REMOVE
 }
 
 void ModelDesignWizardDialog::resizeEvent(QResizeEvent* event) {

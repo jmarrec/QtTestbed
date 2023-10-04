@@ -35,10 +35,11 @@
 #include <QJsonObject>
 #include <QDialog>
 
-class QLabel;
+class QCheckBox;
 class QCloseEvent;
 class QComboBox;
 class QDoubleValidator;
+class QLabel;
 class QLineEdit;
 class QProcess;
 class QPushButton;
@@ -50,6 +51,7 @@ class QWidget;
 
 namespace openstudio {
 
+class OSNonModelObjectQuantityEdit;
 class TextEditDialog;
 class WorkflowJSON;
 
@@ -159,8 +161,13 @@ class ModelDesignWizardDialog : public OSDialog
 
   QWidget* m_spaceTypeRatiosPageWidget;
   QWidget* m_spaceTypeRatiosMainLayout;
-  QLineEdit* m_totalBuildingFloorAreaEdit;
+  openstudio::OSNonModelObjectQuantityEdit* m_totalBuildingFloorAreaEdit;
   QLineEdit* m_totalBuildingRatioEdit;
+  double m_totalFloorArea;
+
+  // mimic the settings
+  QCheckBox* m_useIPCheckBox;
+  bool m_isIP = true;
 };
 
 }  // namespace openstudio
