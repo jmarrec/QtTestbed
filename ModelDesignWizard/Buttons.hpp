@@ -4,6 +4,16 @@
 #include <QPushButton>
 
 namespace openstudio {
+
+class AddButton : public QPushButton
+{
+  Q_OBJECT
+
+ public:
+  explicit AddButton(QWidget* parent = nullptr);
+  virtual ~AddButton() = default;
+};
+
 class RemoveButton : public QPushButton
 {
   Q_OBJECT

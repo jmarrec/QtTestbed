@@ -2,6 +2,16 @@
   <qresource>
     <file>app.qss</file>
     <file>library/ModelDesignWizard.json</file>
+
+    <file>images/add_off.png</file>
+    <file>images/add_disabled.png</file>
+    <file>images/add_over.png</file>
+    <file>images/add_press.png</file>
+    <file>images/add_off@2x.png</file>
+    <file>images/add_disabled@2x.png</file>
+    <file>images/add_over@2x.png</file>
+    <file>images/add_press@2x.png</file>
+
     <file>images/delete_off.png</file>
     <file>images/delete_disabled.png</file>
     <file>images/delete_over.png</file>
