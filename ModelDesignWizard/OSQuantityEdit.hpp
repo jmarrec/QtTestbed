@@ -81,6 +81,10 @@ class OSNonModelObjectQuantityEdit : public QWidget
   double currentValue() const;
   bool setCurrentValue(double valueModelUnits);
 
+  void refreshTextAndLabel();
+
+  void setFixedPrecision(int numberDecimals);
+
  signals:
 
   void inFocus(bool inFocus, bool hasData);
@@ -111,10 +115,9 @@ class OSNonModelObjectQuantityEdit : public QWidget
   std::string m_siUnits;
   std::string m_ipUnits;
 
+  bool m_isFixedPrecision = false;
   bool m_isScientific;
   boost::optional<int> m_precision;
-
-  void refreshTextAndLabel();
 
   void setPrecision(const std::string& str);
 };

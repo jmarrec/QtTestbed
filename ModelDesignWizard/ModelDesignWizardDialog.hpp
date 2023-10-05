@@ -107,6 +107,7 @@ class ModelDesignWizardDialog : public OSDialog
 
  public slots:
   void recalculateTotalBuildingRatio(bool forceToOne);
+  void recalculateSpaceTypeFloorAreas();
 
  protected slots:
 
@@ -202,7 +203,7 @@ class ModelDesignWizardDialog : public OSDialog
   QWidget* m_spaceTypeRatiosPageWidget;
   QGridLayout* m_spaceTypeRatiosMainLayout;
   openstudio::OSNonModelObjectQuantityEdit* m_totalBuildingFloorAreaEdit;
-  QLineEdit* m_totalBuildingRatioEdit;
+  openstudio::OSNonModelObjectQuantityEdit* m_totalBuildingRatioEdit;
   double m_totalFloorArea;
 
   std::vector<SpaceTypeRatioRow*> m_spaceTypeRatioRows;

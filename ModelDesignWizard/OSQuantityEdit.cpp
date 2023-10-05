@@ -188,6 +188,11 @@ QDoubleValidator* OSNonModelObjectQuantityEdit::doubleValidator() {
   return m_doubleValidator;
 }
 
+void OSNonModelObjectQuantityEdit::setFixedPrecision(int numberDecimals) {
+  m_isFixedPrecision = true;
+  m_precision = numberDecimals;
+}
+
 void OSNonModelObjectQuantityEdit::onEditingFinished() {
 
   qDebug() << "OSNonModelObjectQuantityEdit::onEditingFinished";
@@ -216,7 +221,9 @@ void OSNonModelObjectQuantityEdit::onEditingFinished() {
     refreshTextAndLabel();
   }
 
-  setPrecision(str);
+  if (!m_isFixedPrecision) {
+    setPrecision(str);
+  }
 
   std::string units;
   if (m_isIP) {

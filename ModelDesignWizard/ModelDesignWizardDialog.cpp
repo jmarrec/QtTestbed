@@ -350,8 +350,8 @@ void ModelDesignWizardDialog::addSpaceTypeRatioRow(const QString& buildingType, 
 
   // populateBuildingTypeComboBox(spaceTypeRow->buildingTypeComboBox);
   // populateSpaceTypeComboBox(spaceTypeRow->spaceTypeComboBox, buildingType);
-  connect(m_useIPCheckBox, &QCheckBox::stateChanged,
-          [this, &spaceTypeRow](int state) { spaceTypeRow->onUnitSystemChange(static_cast<bool>(state)); });
+  connect(m_useIPCheckBox, &QCheckBox::stateChanged, spaceTypeRow->spaceTypeFloorAreaEdit,
+          [this, spaceTypeRow](int state) { spaceTypeRow->onUnitSystemChange(static_cast<bool>(state)); });
 
   connect(m_showAdvancedOutput, &QPushButton::clicked, this, &ModelDesignWizardDialog::showAdvancedOutput);
 
@@ -417,6 +417,9 @@ SpaceTypeRatioRow::SpaceTypeRatioRow(ModelDesignWizardDialog* parent, const QStr
     deleteRowButton(new openstudio::RemoveButton()),
     gridLayoutRowIndex(parent->spaceTypeRatiosMainLayout()->rowCount()) {
 
+  spaceTypeRatioEdit->setFixedPrecision(4);
+  spaceTypeFloorAreaEdit->setFixedPrecision(2);
+
   int col = 0;
 
   parent->spaceTypeRatiosMainLayout()->addWidget(buildingTypeComboBox, gridLayoutRowIndex, col++, 1, 1);
@@ -426,6 +429,9 @@ SpaceTypeRatioRow::SpaceTypeRatioRow(ModelDesignWizardDialog* parent, const QStr
   parent->spaceTypeRatiosMainLayout()->addWidget(spaceTypeComboBox, gridLayoutRowIndex, col++, 1, 1);
   parent->populateSpaceTypeComboBox(spaceTypeComboBox, buildingType);
   spaceTypeComboBox->setCurrentText(spaceType);
+  const bool isConnected =
+    QComboBox::connect(buildingTypeComboBox, &QComboBox::currentTextChanged, spaceTypeComboBox,
+                       [this, parent](const QString& buildingType) { parent->populateSpaceTypeComboBox(spaceTypeComboBox, buildingType); });
 
   spaceTypeRatioEdit->setMinimumValue(0.0);
   spaceTypeRatioEdit->setMaximumValue(1.0);
@@ -466,11 +472,22 @@ void ModelDesignWizardDialog::recalculateTotalBuildingRatio(bool forceToOne) {
       spaceTypeRatioRow->spaceTypeRatioEdit->blockSignals(true);
       spaceTypeRatioRow->spaceTypeRatioEdit->setCurrentValue(spaceTypeRatioRow->spaceTypeRatioEdit->currentValue() / totalRatio);
       spaceTypeRatioRow->spaceTypeRatioEdit->blockSignals(false);
+      spaceTypeRatioRow->spaceTypeRatioEdit->refreshTextAndLabel();
     }
     totalRatio = 1.0;
   }
 
-  m_totalBuildingRatioEdit->setText(QString::number(totalRatio));
+  m_totalBuildingRatioEdit->setCurrentValue(totalRatio);
+}
+
+void ModelDesignWizardDialog::recalculateSpaceTypeFloorAreas() {
+  const double totalFloorArea = m_totalBuildingFloorAreaEdit->currentValue();
+  for (auto* spaceTypeRatioRow : m_spaceTypeRatioRows) {
+    const double ratio = spaceTypeRatioRow->spaceTypeRatioEdit->currentValue();
+    spaceTypeRatioRow->spaceTypeFloorAreaEdit->blockSignals(true);
+    spaceTypeRatioRow->spaceTypeFloorAreaEdit->setCurrentValue(totalFloorArea * ratio);
+    spaceTypeRatioRow->spaceTypeFloorAreaEdit->blockSignals(false);
+  }
 }
 
 double ModelDesignWizardDialog::totalBuildingFloorArea() const {
@@ -512,8 +529,10 @@ void ModelDesignWizardDialog::populateSpaceTypeRatiosPage() {
       m_totalBuildingFloorAreaEdit = new openstudio::OSNonModelObjectQuantityEdit("ft^2", "m^2", "ft^2", m_isIP);
       m_totalBuildingFloorAreaEdit->setMinimumValue(0.0);
       m_totalBuildingFloorAreaEdit->enableClickFocus();
+      m_totalBuildingFloorAreaEdit->setFixedPrecision(2);
       m_spaceTypeRatiosMainLayout->addWidget(m_totalBuildingFloorAreaEdit, row, col++, 1, 1);
       connect(m_useIPCheckBox, &QCheckBox::stateChanged, m_totalBuildingFloorAreaEdit, &OSNonModelObjectQuantityEdit::onUnitSystemChange);
+      connect(m_totalBuildingFloorAreaEdit, &OSNonModelObjectQuantityEdit::valueChanged, [this]() { recalculateSpaceTypeFloorAreas(); });
       m_totalBuildingFloorAreaEdit->setDefault(10000.0);
     }
     {
@@ -522,9 +541,15 @@ void ModelDesignWizardDialog::populateSpaceTypeRatiosPage() {
       m_spaceTypeRatiosMainLayout->addWidget(totalBuildingRatioLabel, row, col++, 1, 1);
     }
     {
-      m_totalBuildingRatioEdit = new QLineEdit();
-      m_totalBuildingRatioEdit->setEnabled(false);
+      m_totalBuildingRatioEdit = new openstudio::OSNonModelObjectQuantityEdit("", "", "", m_isIP);
+      m_totalBuildingRatioEdit->setLocked(true);
+      m_totalBuildingRatioEdit->setFixedPrecision(4);
       m_spaceTypeRatiosMainLayout->addWidget(m_totalBuildingRatioEdit, row, col++, 1, 1);
+    }
+    {
+      auto* normalizeToOneButton = new openstudio::AddButton();  // TODO: replace with another icon
+      m_spaceTypeRatiosMainLayout->addWidget(normalizeToOneButton, row, col++, 1, 1);
+      connect(normalizeToOneButton, &QPushButton::clicked, [this]() { recalculateTotalBuildingRatio(true); });
     }
   }
 
