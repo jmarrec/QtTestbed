@@ -255,6 +255,19 @@ bool OSNonModelObjectQuantityEdit::defaulted() const {
   return !m_valueModelUnits.has_value();
 }
 
+double OSNonModelObjectQuantityEdit::currentValue() const {
+  return m_valueModelUnits ? *m_valueModelUnits : m_defaultValue;
+}
+
+bool OSNonModelObjectQuantityEdit::setCurrentValue(double valueModelUnits) {
+  if (valueModelUnits >= m_doubleValidator->bottom() && valueModelUnits <= m_doubleValidator->top()) {
+    m_valueModelUnits = valueModelUnits;
+    refreshTextAndLabel();
+    return true;
+  }
+  return false;
+}
+
 void OSNonModelObjectQuantityEdit::refreshTextAndLabel() {
 
   QString text = m_lineEdit->text();
@@ -312,6 +325,8 @@ void OSNonModelObjectQuantityEdit::refreshTextAndLabel() {
   // m_units->setText(toQString(formatUnitString(ss.str(), DocumentFormat::XHTML)));
   m_units->setText(QString::fromStdString(units));
   m_units->blockSignals(false);
+
+  emit(valueChanged(currentValue()));
 }
 
 void OSNonModelObjectQuantityEdit::setPrecision(const std::string& str) {

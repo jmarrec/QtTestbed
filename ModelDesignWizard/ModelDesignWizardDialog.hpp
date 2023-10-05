@@ -39,6 +39,7 @@ class QCheckBox;
 class QCloseEvent;
 class QComboBox;
 class QDoubleValidator;
+class QGridLayout;
 class QLabel;
 class QLineEdit;
 class QProcess;
@@ -52,12 +53,37 @@ class QWidget;
 namespace openstudio {
 
 class OSNonModelObjectQuantityEdit;
+class RemoveButton;
 class TextEditDialog;
 class WorkflowJSON;
 
 namespace measuretab {
 class MeasureStepItem;
 }
+
+class ModelDesignWizardDialog;
+
+class SpaceTypeRatioRow
+{
+
+ public:
+  SpaceTypeRatioRow(ModelDesignWizardDialog* parent, const QString& buildingType = "", const QString& spaceType = "", double ratio = 0.0);
+
+  QComboBox* buildingTypeComboBox;
+  QComboBox* spaceTypeComboBox;
+  openstudio::OSNonModelObjectQuantityEdit* spaceTypeRatioEdit;
+  openstudio::OSNonModelObjectQuantityEdit* spaceTypeFloorAreaEdit;
+  RemoveButton* deleteRowButton;
+  int gridLayoutRowIndex;
+  size_t vectorPos;
+
+  void onUnitSystemChange(bool isIP);
+  void onBuildingTotalFloorAreaChange();
+  void recalculateFloorArea(double totalBuildingFloorArea);
+  // std::string buildingType;
+  // std::string spaceType;
+  // double ratio;
+};
 
 class ModelDesignWizardDialog : public OSDialog
 {
@@ -68,7 +94,19 @@ class ModelDesignWizardDialog : public OSDialog
 
   virtual ~ModelDesignWizardDialog();
 
+  QGridLayout* spaceTypeRatiosMainLayout() const;
+  QString selectedPrimaryBuildingType() const;
+  bool isIP() const;
+
   QSize sizeHint() const override;
+
+  void populateBuildingTypeComboBox(QComboBox* comboBox);
+  void populateSpaceTypeComboBox(QComboBox* comboBox, QString buildingType = "");
+
+  double totalBuildingFloorArea() const;
+
+ public slots:
+  void recalculateTotalBuildingRatio(bool forceToOne);
 
  protected slots:
 
@@ -110,6 +148,8 @@ class ModelDesignWizardDialog : public OSDialog
 
   void toolsUpdated();
 
+  void onUnitSystemChange(bool isIP);
+
  private:
   void createWidgets();
   QWidget* createTemplateSelectionPage();
@@ -119,8 +159,8 @@ class ModelDesignWizardDialog : public OSDialog
 
   void runMeasure();
 
-  void populateBuildingTypeComboBox(QComboBox* comboBox);
-  void populateSpaceTypeComboBox(QComboBox* comboBox, const QString& buildingType);
+  void addSpaceTypeRatioRow(const QString& buildingType = "", const QString& spaceType = "", double ratio = 0.0);
+  void removeSpaceTypeRatioRow(SpaceTypeRatioRow* row);
 
   QStackedWidget* m_mainPaneStackedWidget;
 
@@ -160,10 +200,12 @@ class ModelDesignWizardDialog : public OSDialog
   QDoubleValidator* m_positiveDoubleValidator;
 
   QWidget* m_spaceTypeRatiosPageWidget;
-  QWidget* m_spaceTypeRatiosMainLayout;
+  QGridLayout* m_spaceTypeRatiosMainLayout;
   openstudio::OSNonModelObjectQuantityEdit* m_totalBuildingFloorAreaEdit;
   QLineEdit* m_totalBuildingRatioEdit;
   double m_totalFloorArea;
+
+  std::vector<SpaceTypeRatioRow*> m_spaceTypeRatioRows;
 
   // mimic the settings
   QCheckBox* m_useIPCheckBox;

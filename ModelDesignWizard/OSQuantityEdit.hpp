@@ -78,9 +78,13 @@ class OSNonModelObjectQuantityEdit : public QWidget
 
   bool setDefault(double defaultValue);
 
+  double currentValue() const;
+  bool setCurrentValue(double valueModelUnits);
+
  signals:
 
   void inFocus(bool inFocus, bool hasData);
+  void valueChanged(double valueModelUnits);
 
  public slots:
 
