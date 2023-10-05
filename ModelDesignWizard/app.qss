@@ -17,3 +17,23 @@ QPushButton#DeleteButton:hover {
 QPushButton#DeleteButton:pressed {
   background-image: url(":/images/delete_press.png");
 }
+
+QPushButton#AddButton {
+  border: none;
+  background: transparent;
+  background-image: url(":/images/add_off.png");
+  padding-left: none;
+  padding-right: none;
+}
+
+QPushButton#AddButton:disabled {
+  background-image: url(":/images/add_disabled.png");
+}
+
+QPushButton#AddButton:hover {
+  background-image: url(":/images/add_over.png");
+}
+
+QPushButton#AddButton:pressed {
+  background-image: url(":/images/add_press.png");
+}
