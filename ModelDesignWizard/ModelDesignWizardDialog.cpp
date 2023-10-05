@@ -30,6 +30,7 @@
 #include "ModelDesignWizardDialog.hpp"
 #include "Buttons.hpp"
 #include "OSQuantityEdit.hpp"
+#include "Assert.hpp"
 
 #include <QApplication>
 
@@ -62,7 +63,7 @@
 
 #include <array>
 #include <fstream>
-#include <qnamespace.h>
+#include <vector>
 #include <string_view>
 
 #define FAILED_ARG_TEXT "<FONT COLOR = RED>Failed to Show Arguments<FONT COLOR = BLACK> <br> <br>Reason(s): <br> <br>"
@@ -99,6 +100,8 @@ QtMsgType convertOpenStudioLogLevelToQtMsgType(LogLevel level) {
   if (level == LogLevel::Fatal) {
     return QtMsgType::QtFatalMsg;
   }
+
+  return QtMsgType::QtDebugMsg;
 }
 
 void LOG(LogLevel level, const std::string& message) {
@@ -117,7 +120,7 @@ void LOG(LogLevel level, const std::string& message) {
     qCritical() << msg;
   }
   if (level == LogLevel::Fatal) {
-    qFatal(message.c_str());
+    qFatal("%s", message.c_str());
   }
 }
 
@@ -157,10 +160,10 @@ ModelDesignWizardDialog::ModelDesignWizardDialog(QWidget* parent)
   createWidgets();
 }
 
-ModelDesignWizardDialog::~ModelDesignWizardDialog() {}
+ModelDesignWizardDialog::~ModelDesignWizardDialog() = default;
 
 QSize ModelDesignWizardDialog::sizeHint() const {
-  return QSize(770, 560);
+  return {770, 560};
 }
 
 QWidget* ModelDesignWizardDialog::createTemplateSelectionPage() {
@@ -294,7 +297,7 @@ void ModelDesignWizardDialog::populatePrimaryBuildingTypes() {
   populateBuildingTypeComboBox(m_primaryBuildingTypeComboBox);
 }
 
-void ModelDesignWizardDialog::populateSpaceTypeComboBox(QComboBox* comboBox, const QString& buildingType) {
+void ModelDesignWizardDialog::populateSpaceTypeComboBox(QComboBox* comboBox, QString buildingType) {
 
   comboBox->blockSignals(true);
 
@@ -302,12 +305,21 @@ void ModelDesignWizardDialog::populateSpaceTypeComboBox(QComboBox* comboBox, con
 
   comboBox->addItem("");
 
-  const QString selectedStandardType = m_standardTypeComboBox->currentText();
-  const QString selectedStandard = m_targetStandardComboBox->currentText();
+  if (buildingType.isEmpty()) {
+    buildingType = m_primaryBuildingTypeComboBox->currentText();
+  }
+  if (!buildingType.isEmpty()) {
+    const QString selectedStandardType = m_standardTypeComboBox->currentText();
+    const QString selectedStandard = m_targetStandardComboBox->currentText();
 
-  for (const QString& temp :
-       m_supportJsonObject[selectedStandardType].toObject()["space_types"].toObject()[selectedStandard].toObject()[buildingType].toObject().keys()) {
-    comboBox->addItem(temp);
+    for (const QString& temp : m_supportJsonObject[selectedStandardType]
+                                 .toObject()["space_types"]
+                                 .toObject()[selectedStandard]
+                                 .toObject()[buildingType]
+                                 .toObject()
+                                 .keys()) {
+      comboBox->addItem(temp);
+    }
   }
 
   comboBox->setCurrentIndex(0);
@@ -315,17 +327,193 @@ void ModelDesignWizardDialog::populateSpaceTypeComboBox(QComboBox* comboBox, con
   comboBox->blockSignals(false);
 }
 
-void ModelDesignWizardDialog::populateSpaceTypeRatiosPage() {
+QGridLayout* ModelDesignWizardDialog::spaceTypeRatiosMainLayout() const {
+  return m_spaceTypeRatiosMainLayout;
+}
 
-  auto* m_spaceTypeRatiosMainLayout = new QGridLayout();
-  m_spaceTypeRatiosMainLayout->setContentsMargins(7, 7, 7, 7);
-  m_spaceTypeRatiosMainLayout->setSpacing(14);
+QString ModelDesignWizardDialog::selectedPrimaryBuildingType() const {
+  return m_primaryBuildingTypeComboBox->currentText();
+}
+
+bool ModelDesignWizardDialog::isIP() const {
+  return m_isIP;
+}
+
+void ModelDesignWizardDialog::addSpaceTypeRatioRow(const QString& buildingType, const QString& spaceType, double ratio) {
+
+  qDebug() << "inside: " << m_spaceTypeRatiosMainLayout;
+  qDebug() << "inside: " << m_spaceTypeRatiosMainLayout->rowCount();
+
+  auto* spaceTypeRow = new SpaceTypeRatioRow(this, buildingType, spaceType, ratio);
+  m_spaceTypeRatioRows.push_back(spaceTypeRow);
+  spaceTypeRow->vectorPos = m_spaceTypeRatioRows.size() - 1;
+
+  // populateBuildingTypeComboBox(spaceTypeRow->buildingTypeComboBox);
+  // populateSpaceTypeComboBox(spaceTypeRow->spaceTypeComboBox, buildingType);
+  connect(m_useIPCheckBox, &QCheckBox::stateChanged, spaceTypeRow->spaceTypeFloorAreaEdit,
+          [this, spaceTypeRow](int state) { spaceTypeRow->onUnitSystemChange(static_cast<bool>(state)); });
+
+  connect(m_showAdvancedOutput, &QPushButton::clicked, this, &ModelDesignWizardDialog::showAdvancedOutput);
+
+  connect(spaceTypeRow->deleteRowButton, &QPushButton::clicked, [this, spaceTypeRow]() { removeSpaceTypeRatioRow(spaceTypeRow); });
+}
+
+void ModelDesignWizardDialog::removeSpaceTypeRatioRow(SpaceTypeRatioRow* row) {
+
+  qDebug() << "removeSpaceTypeRatioRow, Original rowCount: " << m_spaceTypeRatiosMainLayout->rowCount();
+  qDebug() << "Removing row at gridLayoutRowIndex=" << row->gridLayoutRowIndex << " and vectorPos=" << row->vectorPos;
+  for (int i = 0; auto* spaceTypeRatioRow : m_spaceTypeRatioRows) {
+    qDebug() << "* " << i++ << "gridLayoutRowIndex=" << spaceTypeRatioRow->gridLayoutRowIndex << " and vectorPos=" << spaceTypeRatioRow->vectorPos;
+  }
+  auto it = std::next(m_spaceTypeRatioRows.begin(), row->vectorPos);
+
+#if 1
+
+  //  m_spaceTypeRatiosMainLayout->removeWidget(row->buildingTypeComboBox);
+  m_spaceTypeRatiosMainLayout->removeWidget(row->buildingTypeComboBox);
+  delete row->buildingTypeComboBox;
+  m_spaceTypeRatiosMainLayout->removeWidget(row->spaceTypeComboBox);
+  delete row->spaceTypeComboBox;
+  m_spaceTypeRatiosMainLayout->removeWidget(row->spaceTypeRatioEdit);
+  delete row->spaceTypeRatioEdit;
+  m_spaceTypeRatiosMainLayout->removeWidget(row->spaceTypeFloorAreaEdit);
+  delete row->spaceTypeFloorAreaEdit;
+  m_spaceTypeRatiosMainLayout->removeWidget(row->deleteRowButton);
+  delete row->deleteRowButton;
+
+  m_spaceTypeRatiosMainLayout->setRowMinimumHeight(row->gridLayoutRowIndex, 0);
+  m_spaceTypeRatiosMainLayout->setRowStretch(row->gridLayoutRowIndex, 0);
+
+#elif 0
+  QLayoutItem* child = nullptr;
+
+  while ((child = m_spaceTypeRatiosMainLayout->takeAt(index)) != nullptr) {
+    QWidget* widget = child->widget();
+
+    OS_ASSERT(widget);
+
+    delete widget;
+    // Using deleteLater is actually slower than calling delete directly on the widget
+    // deleteLater also introduces a strange redraw issue where the select all check box
+    // is not redrawn, after being checked.
+    //widget->deleteLater();
+
+    delete child;
+  }
+#endif
+  m_spaceTypeRatioRows.erase(it);
+  qDebug() << "removeSpaceTypeRatioRow, Final rowCount: " << m_spaceTypeRatiosMainLayout->rowCount();
+  for (int i = 0; auto* spaceTypeRatioRow : m_spaceTypeRatioRows) {
+    spaceTypeRatioRow->vectorPos = i++;
+  }
+  recalculateTotalBuildingRatio(true);
+}
+
+SpaceTypeRatioRow::SpaceTypeRatioRow(ModelDesignWizardDialog* parent, const QString& buildingType, const QString& spaceType, double ratio)
+  : buildingTypeComboBox(new QComboBox()),
+    spaceTypeComboBox(new QComboBox()),
+    spaceTypeRatioEdit(new openstudio::OSNonModelObjectQuantityEdit("", "", "", false)),
+    spaceTypeFloorAreaEdit(new openstudio::OSNonModelObjectQuantityEdit("ft^2", "m^2", "ft^2", parent->isIP())),
+    deleteRowButton(new openstudio::RemoveButton()),
+    gridLayoutRowIndex(parent->spaceTypeRatiosMainLayout()->rowCount()) {
+
+  spaceTypeRatioEdit->setFixedPrecision(4);
+  spaceTypeFloorAreaEdit->setFixedPrecision(2);
+
+  int col = 0;
+
+  parent->spaceTypeRatiosMainLayout()->addWidget(buildingTypeComboBox, gridLayoutRowIndex, col++, 1, 1);
+  parent->populateBuildingTypeComboBox(buildingTypeComboBox);
+  buildingTypeComboBox->setCurrentText(buildingType);
+
+  parent->spaceTypeRatiosMainLayout()->addWidget(spaceTypeComboBox, gridLayoutRowIndex, col++, 1, 1);
+  parent->populateSpaceTypeComboBox(spaceTypeComboBox, buildingType);
+  spaceTypeComboBox->setCurrentText(spaceType);
+  const bool isConnected =
+    QComboBox::connect(buildingTypeComboBox, &QComboBox::currentTextChanged, spaceTypeComboBox,
+                       [this, parent](const QString& buildingType) { parent->populateSpaceTypeComboBox(spaceTypeComboBox, buildingType); });
+
+  spaceTypeRatioEdit->setMinimumValue(0.0);
+  spaceTypeRatioEdit->setMaximumValue(1.0);
+  spaceTypeRatioEdit->enableClickFocus();
+  // connect(this, &SpaceTypeRatioRow::onUnitSystemChange, spaceTypeRatioEdit, &OSNonModelObjectQuantityEdit::onUnitSystemChange);
+  // ModelDesignWizardDialog::connect(parent, &ModelDesignWizardDialog::onUnitSystemChange, spaceTypeRatioEdit,
+  //                                 &OSNonModelObjectQuantityEdit::onUnitSystemChange);
+
+  parent->spaceTypeRatiosMainLayout()->addWidget(spaceTypeRatioEdit, gridLayoutRowIndex, col++, 1, 1);
+
+  spaceTypeFloorAreaEdit->setMinimumValue(0.0);
+  // spaceTypeFloorAreaEdit->enableClickFocus();
+  spaceTypeFloorAreaEdit->setLocked(true);
+
+  parent->spaceTypeRatiosMainLayout()->addWidget(spaceTypeFloorAreaEdit, gridLayoutRowIndex, col++, 1, 1);
+  // connect(this, &SpaceTypeRatioRow::onUnitSystemChange, spaceTypeFloorAreaEdit, &OSNonModelObjectQuantityEdit::onUnitSystemChange);
+
+  OSNonModelObjectQuantityEdit::connect(spaceTypeRatioEdit, &OSNonModelObjectQuantityEdit::valueChanged, [this, parent](double newValue) {
+    recalculateFloorArea(parent->totalBuildingFloorArea());
+    parent->recalculateTotalBuildingRatio(false);
+  });
+  parent->spaceTypeRatiosMainLayout()->addWidget(deleteRowButton, gridLayoutRowIndex, col++, 1, 1);
+
+  spaceTypeRatioEdit->setDefault(ratio);
+
+  // const bool isConnected = QObject::connect(buildingTypeComboBox, &QComboBox::currentTextChanged, [this, &spaceTypeComboBox](const QString& text) {
+  //   parent->populateSpaceTypeComboBox(spaceTypeComboBox, text);
+  // });
+}
+
+void ModelDesignWizardDialog::recalculateTotalBuildingRatio(bool forceToOne) {
+  double totalRatio = 0;
+  for (auto* spaceTypeRatioRow : m_spaceTypeRatioRows) {
+    totalRatio += spaceTypeRatioRow->spaceTypeRatioEdit->currentValue();
+  }
+  if (forceToOne) {
+    for (auto* spaceTypeRatioRow : m_spaceTypeRatioRows) {
+      spaceTypeRatioRow->spaceTypeRatioEdit->blockSignals(true);
+      spaceTypeRatioRow->spaceTypeRatioEdit->setCurrentValue(spaceTypeRatioRow->spaceTypeRatioEdit->currentValue() / totalRatio);
+      spaceTypeRatioRow->spaceTypeRatioEdit->blockSignals(false);
+      spaceTypeRatioRow->spaceTypeRatioEdit->refreshTextAndLabel();
+    }
+    totalRatio = 1.0;
+  }
+
+  m_totalBuildingRatioEdit->setCurrentValue(totalRatio);
+}
+
+void ModelDesignWizardDialog::recalculateSpaceTypeFloorAreas() {
+  const double totalFloorArea = m_totalBuildingFloorAreaEdit->currentValue();
+  for (auto* spaceTypeRatioRow : m_spaceTypeRatioRows) {
+    const double ratio = spaceTypeRatioRow->spaceTypeRatioEdit->currentValue();
+    spaceTypeRatioRow->spaceTypeFloorAreaEdit->blockSignals(true);
+    spaceTypeRatioRow->spaceTypeFloorAreaEdit->setCurrentValue(totalFloorArea * ratio);
+    spaceTypeRatioRow->spaceTypeFloorAreaEdit->blockSignals(false);
+  }
+}
+
+double ModelDesignWizardDialog::totalBuildingFloorArea() const {
+  return m_totalBuildingFloorAreaEdit->currentValue();
+}
+
+void SpaceTypeRatioRow::onUnitSystemChange(bool isIP) {
+  // spaceTypeRatioEdit->onUnitSystemChange(isIP);
+  spaceTypeFloorAreaEdit->onUnitSystemChange(isIP);
+}
+
+void SpaceTypeRatioRow::recalculateFloorArea(double totalBuildingFloorArea) {
+  const double floorArea = spaceTypeRatioEdit->currentValue() * totalBuildingFloorArea;
+  spaceTypeFloorAreaEdit->setCurrentValue(floorArea);
+}
+
+void ModelDesignWizardDialog::populateSpaceTypeRatiosPage() {
 
   if (auto* existingLayout = m_spaceTypeRatiosPageWidget->layout()) {
     // Reparent the layout to a temporary widget, so we can install the new one, and this one will get deleted because we don't have a reference to it anymore
     QWidget().setLayout(existingLayout);
   }
 
+  m_spaceTypeRatiosMainLayout = new QGridLayout();
+  m_spaceTypeRatiosMainLayout->setContentsMargins(7, 7, 7, 7);
+  m_spaceTypeRatiosMainLayout->setSpacing(14);
   m_spaceTypeRatiosPageWidget->setLayout(m_spaceTypeRatiosMainLayout);
 
   int row = m_spaceTypeRatiosMainLayout->rowCount();
@@ -341,8 +529,10 @@ void ModelDesignWizardDialog::populateSpaceTypeRatiosPage() {
       m_totalBuildingFloorAreaEdit = new openstudio::OSNonModelObjectQuantityEdit("ft^2", "m^2", "ft^2", m_isIP);
       m_totalBuildingFloorAreaEdit->setMinimumValue(0.0);
       m_totalBuildingFloorAreaEdit->enableClickFocus();
+      m_totalBuildingFloorAreaEdit->setFixedPrecision(2);
       m_spaceTypeRatiosMainLayout->addWidget(m_totalBuildingFloorAreaEdit, row, col++, 1, 1);
       connect(m_useIPCheckBox, &QCheckBox::stateChanged, m_totalBuildingFloorAreaEdit, &OSNonModelObjectQuantityEdit::onUnitSystemChange);
+      connect(m_totalBuildingFloorAreaEdit, &OSNonModelObjectQuantityEdit::valueChanged, [this]() { recalculateSpaceTypeFloorAreas(); });
       m_totalBuildingFloorAreaEdit->setDefault(10000.0);
     }
     {
@@ -351,11 +541,25 @@ void ModelDesignWizardDialog::populateSpaceTypeRatiosPage() {
       m_spaceTypeRatiosMainLayout->addWidget(totalBuildingRatioLabel, row, col++, 1, 1);
     }
     {
-      m_totalBuildingRatioEdit = new QLineEdit();
-      m_totalBuildingRatioEdit->setEnabled(false);
+      m_totalBuildingRatioEdit = new openstudio::OSNonModelObjectQuantityEdit("", "", "", m_isIP);
+      m_totalBuildingRatioEdit->setLocked(true);
+      m_totalBuildingRatioEdit->setFixedPrecision(4);
       m_spaceTypeRatiosMainLayout->addWidget(m_totalBuildingRatioEdit, row, col++, 1, 1);
     }
+    {
+      auto* normalizeToOneButton = new openstudio::AddButton();  // TODO: replace with another icon
+      m_spaceTypeRatiosMainLayout->addWidget(normalizeToOneButton, row, col++, 1, 1);
+      connect(normalizeToOneButton, &QPushButton::clicked, [this]() { recalculateTotalBuildingRatio(true); });
+    }
   }
+
+  ++row;
+
+  auto* addRowButton = new openstudio::AddButton();
+  m_spaceTypeRatiosMainLayout->addWidget(addRowButton, row, 0, 1, 1);
+  connect(addRowButton, &QPushButton::clicked, [this]() { addSpaceTypeRatioRow(); });
+
+  // TODO: add a way to add / delete rows, so one could pick from another building type for eg
 
   ++row;
   {
@@ -394,9 +598,14 @@ void ModelDesignWizardDialog::populateSpaceTypeRatiosPage() {
   for (QJsonObject::const_iterator it = defaultSpaceTypeRatios.constBegin(); it != defaultSpaceTypeRatios.constEnd(); ++it) {
     ++row;
     {
-      int col = 0;
-
 #if 1
+      const QString spaceType = it.key();
+      const double ratio = it.value().toObject()["ratio"].toDouble();
+      qDebug() << "before: " << m_spaceTypeRatiosMainLayout;
+      qDebug() << "before: " << m_spaceTypeRatiosMainLayout->rowCount();
+      addSpaceTypeRatioRow(selectedPrimaryBuildingType, spaceType, ratio);
+
+#elif 0
       auto* buildingTypeComboBox = new QComboBox();
       m_spaceTypeRatiosMainLayout->addWidget(buildingTypeComboBox, row, col++, 1, 1);
       populateBuildingTypeComboBox(buildingTypeComboBox);
@@ -461,8 +670,6 @@ void ModelDesignWizardDialog::populateSpaceTypeRatiosPage() {
   }
 
   m_spaceTypeRatiosMainLayout->setRowStretch(m_spaceTypeRatiosMainLayout->rowCount(), 100);
-
-  // TODO: add a way to add / delete rows, so one could pick from another building type for eg
 }
 
 QWidget* ModelDesignWizardDialog::createSpaceTypeRatiosPage() {

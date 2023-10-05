@@ -188,6 +188,11 @@ QDoubleValidator* OSNonModelObjectQuantityEdit::doubleValidator() {
   return m_doubleValidator;
 }
 
+void OSNonModelObjectQuantityEdit::setFixedPrecision(int numberDecimals) {
+  m_isFixedPrecision = true;
+  m_precision = numberDecimals;
+}
+
 void OSNonModelObjectQuantityEdit::onEditingFinished() {
 
   qDebug() << "OSNonModelObjectQuantityEdit::onEditingFinished";
@@ -216,7 +221,9 @@ void OSNonModelObjectQuantityEdit::onEditingFinished() {
     refreshTextAndLabel();
   }
 
-  setPrecision(str);
+  if (!m_isFixedPrecision) {
+    setPrecision(str);
+  }
 
   std::string units;
   if (m_isIP) {
@@ -253,6 +260,19 @@ bool OSNonModelObjectQuantityEdit::setDefault(double defaultValue) {
 
 bool OSNonModelObjectQuantityEdit::defaulted() const {
   return !m_valueModelUnits.has_value();
+}
+
+double OSNonModelObjectQuantityEdit::currentValue() const {
+  return m_valueModelUnits ? *m_valueModelUnits : m_defaultValue;
+}
+
+bool OSNonModelObjectQuantityEdit::setCurrentValue(double valueModelUnits) {
+  if (valueModelUnits >= m_doubleValidator->bottom() && valueModelUnits <= m_doubleValidator->top()) {
+    m_valueModelUnits = valueModelUnits;
+    refreshTextAndLabel();
+    return true;
+  }
+  return false;
 }
 
 void OSNonModelObjectQuantityEdit::refreshTextAndLabel() {
@@ -312,6 +332,8 @@ void OSNonModelObjectQuantityEdit::refreshTextAndLabel() {
   // m_units->setText(toQString(formatUnitString(ss.str(), DocumentFormat::XHTML)));
   m_units->setText(QString::fromStdString(units));
   m_units->blockSignals(false);
+
+  emit(valueChanged(currentValue()));
 }
 
 void OSNonModelObjectQuantityEdit::setPrecision(const std::string& str) {

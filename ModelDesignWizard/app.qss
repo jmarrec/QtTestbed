@@ -37,3 +37,31 @@ QPushButton#AddButton:hover {
 QPushButton#AddButton:pressed {
   background-image: url(":/images/add_press.png");
 }
+
+
+QWidget {
+  color: #19232D;
+}
+
+QWidget:disabled {
+  color: #788D9C;
+}
+
+QLineEdit {
+  background-color: #FAFAFA;
+  color: #19232D;
+}
+
+QLineEdit:disabled {
+  background-color: #FAFAFA;
+  color: #788D9C;
+}
+
+QLineEdit:hover {
+  color: #19232D;
+}
+
+QLineEdit:selected {
+  background-color: #9FCBFF;
+  color: #C9CDD0;
+}
