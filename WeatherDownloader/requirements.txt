@@ -1,0 +1,8 @@
+pyside6==6.5.3
+pandas
+geopandas
+matplotlib
+jupyter
+notebook
+requests
+lxml
