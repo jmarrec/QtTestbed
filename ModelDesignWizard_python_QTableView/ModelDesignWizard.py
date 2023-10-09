@@ -6,7 +6,8 @@ import io
 import json
 import sys
 from dataclasses import dataclass, fields
-from functools import cache
+# from functools import cache   # cache needs python 3.9
+from functools import lru_cache
 from pathlib import Path
 
 from loguru import logger
@@ -25,7 +26,7 @@ class SpaceTypeRatioRow:
     floorArea: float
 
 
-@cache
+@lru_cache(maxsize=None)
 def _load_support_json():
     return json.load(Path("ModelDesignWizard.json").open("r"))
 
@@ -540,6 +541,8 @@ USE_MY_PROXY = False
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+
+    QtCore.QLocale.setDefault(QtCore.QLocale.c())
 
     mainWindow = QtWidgets.QMainWindow()
     mainWindow.resize(QtGui.QGuiApplication.primaryScreen().availableGeometry().size() * 0.7)
