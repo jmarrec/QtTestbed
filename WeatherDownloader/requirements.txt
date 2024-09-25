@@ -1,4 +1,4 @@
-pyside6==6.5.3
+pyside6>=6.5.2
 pandas
 geopandas
 matplotlib
@@ -6,3 +6,4 @@ jupyter
 notebook
 requests
 lxml
+pycountry
